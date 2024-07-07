@@ -56,7 +56,7 @@ class DuckChat:
             },
         )
         if response.status_code != httpx.codes.OK:
-            raise Exception("Can't get country json (maybe ip ban)")
+            print("Can't get country json (maybe ip ban)")
 
     async def get_vqd(self, first: bool) -> None:
         headers = self.get_headers()
@@ -70,13 +70,7 @@ class DuckChat:
         if vqd:
             self._vqd = vqd
 
-    async def ask_question(self, query: str) -> str:
-        if not self._history:
-            await self.simulate_browser_reqs()
-            await self.get_vqd(first=True)
-        else:
-            await self.get_vqd(first=False)
-        self._history.append({"role": "user", "content": query})
+    async def get_res(self):
         message = []
         async with self._client.stream(
             "POST",
@@ -102,10 +96,23 @@ class DuckChat:
                     if type(obj) is dict and obj.get("message"):
                         message.append(obj["message"])
                 except Exception:
-                    print(chunk)
+                    print(f"Unparsed chunk: {chunk}")
             new_vqd = response.headers.get("x-vqd-4")
         if new_vqd:
             self._vqd = new_vqd
-        result = "".join(message)
-        self._history.append({"role": "assistant", "content": result})
-        return result
+        return "".join(message)
+
+    async def ask_question(self, query: str) -> str:
+        try:
+            if not self._history:
+                await self.simulate_browser_reqs()
+                await self.get_vqd(first=True)
+            else:
+                await self.get_vqd(first=False)
+            self._history.append({"role": "user", "content": query})
+            result = await self.get_res()
+            self._history.append({"role": "assistant", "content": result})
+            return result
+        except Exception as e:
+            print(e)
+            return ""
