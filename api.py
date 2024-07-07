@@ -14,6 +14,7 @@ class DuckChat:
         self._client = client
         self._model = model
         self._vqd = None
+        self._history = []
 
     async def __aenter__(self) -> Self:
         await self._client.__aenter__()
@@ -54,10 +55,11 @@ class DuckChat:
         if response.status_code != httpx.codes.OK:
             raise Exception("Can't get country json (maybe ip ban)")
 
-    async def get_vqd(self) -> None:
+    async def get_vqd(self, first: bool) -> None:
         headers = self.get_headers()
         headers["Cache-Control"] = "no-store"
-        headers["x-vqd-accept"] = "1"
+        if first:
+            headers["x-vqd-accept"] = "1"
         response = await self._client.get(
             "https://duckduckgo.com/duckchat/v1/status", headers=headers
         )
@@ -65,9 +67,13 @@ class DuckChat:
         if vqd:
             self._vqd = vqd
 
-    async def get_res(self, query: str) -> str:
-        await self.simulate_browser_reqs()
-        await self.get_vqd()
+    async def ask_question(self, query: str) -> str:
+        if not self._history:
+            await self.simulate_browser_reqs()
+            await self.get_vqd(first=True)
+        else:
+            await self.get_vqd(first=False)
+        self._history.append({"role": "user", "content": query})
         message = []
         async with self._client.stream(
             "POST",
@@ -79,7 +85,7 @@ class DuckChat:
             },
             json={
                 "model": self._model.value,
-                "messages": [{"role": "user", "content": query}],
+                "messages": self._history,
             },
         ) as response:
             async for chunk in response.aiter_lines():
@@ -99,4 +105,6 @@ class DuckChat:
             )
         else:
             self._vqd = new_vqd
-        return "".join(message)
+        result = "".join(message)
+        self._history.append({"role": "assistant", "content": result})
+        return result

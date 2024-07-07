@@ -5,7 +5,9 @@ import asyncio
 
 async def main():
     async with DuckChat(model=ModelType.GPT3) as chat:
-        print(await chat.get_res("2+2?"))
+        print(await chat.ask_question("2+2?"))
+        print(await chat.ask_question("Are you right?"))
+        print(await chat.ask_question("Thank you, have a good day)"))
 
 
 asyncio.run(main())
