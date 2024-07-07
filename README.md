@@ -10,18 +10,30 @@ By using this client you accept [DuckDuckGo AI Chat ToS](https://duckduckgo.com/
 
 ## Installation
 1. Install [python 3.12](https://www.python.org/downloads/)
-2. Clone repo
-```bash
-git clone https://github.com/mrgick/duckduckgo-chat-ai.git && cd duckduckgo-chat-ai
-```
-3. Create python venv
-```bash
-python -m venv .venv && source .venv/bin/activate
-```
-4. Install package
-```bash
-pip install .
-```
+
+2. Create python venv (optionally)
+
+ ```bash
+ python -m venv .venv && source .venv/bin/activate
+ ```
+
+3. Install package
+
+   - Install auto
+   ```bash
+   pip install https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
+   ```
+   - Install manually
+     1. Clone repo
+
+       ```bash
+       git clone https://github.com/mrgick/duckduckgo-chat-ai.git && cd duckduckgo-chat-ai
+       ```
+     2. Install package
+
+       ```bash
+       pip install .
+       ```
 
 ## Usage
 - Using terminal
