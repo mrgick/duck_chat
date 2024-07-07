@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 
 
 class ModelType(Enum):
@@ -7,11 +6,3 @@ class ModelType(Enum):
     GPT3 = "gpt-3.5-turbo-0125"
     Llama = "meta-llama/Llama-3-70b-chat-hf"
     Mixtral = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-
-
-@dataclass
-class Settings:
-    model: ModelType = ModelType.Claude
-
-
-settings = Settings()
