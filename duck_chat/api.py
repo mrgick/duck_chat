@@ -70,7 +70,7 @@ class DuckChat:
         if vqd:
             self._vqd = vqd
 
-    async def get_res(self):
+    async def get_res(self) -> str:
         message = []
         async with self._client.stream(
             "POST",
