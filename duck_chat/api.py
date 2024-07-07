@@ -41,7 +41,6 @@ class DuckChat:
             "DNT": "1",
             "Sec-GPC": "1",
             "Connection": "keep-alive",
-            "Cookie": "dcm=3; ay=b",
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-origin",
@@ -49,10 +48,12 @@ class DuckChat:
         }
 
     async def simulate_browser_reqs(self) -> None:
-        headers = self.get_headers()
-        headers["X-Requested-With"] = "XMLHttpRequest"
         response = await self._client.get(
-            "https://duckduckgo.com/country.json", headers=headers
+            "https://duckduckgo.com/country.json",
+            headers={
+                **self.get_headers(),
+                **{"X-Requested-With": "XMLHttpRequest"},
+            },
         )
         if response.status_code != httpx.codes.OK:
             raise Exception("Can't get country json (maybe ip ban)")
@@ -81,9 +82,11 @@ class DuckChat:
             "POST",
             "https://duckduckgo.com/duckchat/v1/chat",
             headers={
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
-                "x-vqd-4": self._vqd,
+                **self.get_headers(),
+                **{
+                    "Content-Type": "application/json",
+                    "x-vqd-4": self._vqd,
+                },
             },
             json={
                 "model": self._model.value,
@@ -101,11 +104,7 @@ class DuckChat:
                 except Exception:
                     print(chunk)
             new_vqd = response.headers.get("x-vqd-4")
-        if not new_vqd:
-            print(
-                "Warn: DuckDuckGo did not return new VQD. Ignore this if everything else is ok."
-            )
-        else:
+        if new_vqd:
             self._vqd = new_vqd
         result = "".join(message)
         self._history.append({"role": "assistant", "content": result})
