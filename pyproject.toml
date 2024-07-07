@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "duck_chat"
+description = "DuckDuckGo Chat AI client"
+requires-python = ">=3.12"
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = ["httpx>=0.27.0"]
+dynamic = ["version"]
+authors = [
+    { name = "MrGick", email = "mrgickcool@gmail.com" },
+]
+
+[tool.hatch.version]
+path = "duck_chat/__init__.py"
+
+[project.urls]
+Homepage = "https://github.com/endicomp/service_toolkit"
+Documentation = "https://wiki.yandex.ru/nashi-razrabotki/service-toolkit/"
+
+[project.optional-dependencies]
+all = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1"]
+
+
+[tool.isort]
+profile = "black"
+py_version = 312
+
+[tool.ruff]
+lint.select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    # "I",  # isort
+    "C", # flake8-comprehensions
+    "B", # flake8-bugbear
+]
+lint.ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+    "F403", # star import
+    "F405", # star import
+]

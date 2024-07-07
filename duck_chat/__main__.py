@@ -1,10 +1,11 @@
-from api import DuckChat
-from config import ModelType
 import asyncio
+
+from .api import DuckChat
+from .config import ModelType
 
 
 async def main():
-    async with DuckChat(model=ModelType.GPT3) as chat:
+    async with DuckChat(model=ModelType.Claude) as chat:
         while True:
             question = input()
             if question == "stop":

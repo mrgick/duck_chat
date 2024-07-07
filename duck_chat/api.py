@@ -1,8 +1,10 @@
 import json
-from typing import Self
 from types import TracebackType
+from typing import Self
+
 import httpx
-from config import ModelType
+
+from .config import ModelType
 
 
 class DuckChat:
