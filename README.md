@@ -40,6 +40,10 @@ By using this client you accept [DuckDuckGo AI Chat ToS](https://duckduckgo.com/
 ```bash
 python -m duck_chat
 ```
+
+> P.S. You can use hey config ```".config/hey/conf.toml"``` Thanks [k-aito](https://github.com/mrgick/duckduckgo-chat-ai/pull/1)
+
+
 - Using as library
 ```py
 import asyncio

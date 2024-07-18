@@ -6,7 +6,7 @@ from .config import ModelType
 
 
 async def main():
-    async with DuckChat(model=ModelType.Claude) as chat:
+    async with DuckChat(model=ModelType.read_model_from_conf()) as chat:
         while True:
             try:
                 question = input()
