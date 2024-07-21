@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 
-import toml
+import tomllib
 
 
 class ModelType(Enum):
@@ -13,8 +13,8 @@ class ModelType(Enum):
     def read_model_from_conf():
         filepath = Path.home() / ".config" / "hey" / "conf.toml"
         if filepath.exists():
-            with open(filepath, "r") as f:
-                conf = toml.load(f)
+            with open(filepath, "rb") as f:
+                conf = tomllib.load(f)
                 model_name = conf["model"]
             if ModelType[model_name]:
                 return ModelType[model_name]
