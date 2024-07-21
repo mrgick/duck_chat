@@ -1,11 +1,11 @@
 import asyncio
 import sys
 
-from .cli import run
+from .cli import CLI
 
 
 async def main():
-    await run()
+    await CLI().run()
 
 
 if __name__ == "__main__":

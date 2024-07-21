@@ -10,46 +10,51 @@ HELP_MSG = """
 \033[1;1m- /quit         \033[0mQuit"""[1:] # noqa
 
 
-async def run():
-    async with DuckChat(model=ModelType.read_model_from_conf()) as chat:
-        INPUT_MODE = "singleline"
-        print("Type \033[1;4m/help\033[0m to display the help")
-        while True:
-            print("\033[1;4m>>> User input:\033[0m", end="\n")
+class CLI:
+    INPUT_MODE = "singleline"
 
-            # get user question
-            if INPUT_MODE == "singleline":
-                user_input = input().strip()
-            else:
-                user_input = sys.stdin.read().strip()
+    async def run(self) -> None:
+        """Base loop program"""
+        async with DuckChat(model=ModelType.read_model_from_conf()) as chat:
+            print("Type \033[1;4m/help\033[0m to display the help")
 
-            # if user input is command
-            if user_input.startswith("/"):
-                print("\033[1;4m>>> Command response:\033[0m")
-                match user_input[1:]:
-                    case "singleline":
-                        INPUT_MODE = "singleline"
-                        print(
-                            "Switched to singleline mode, validate is done by <enter>"
-                        )
-                    case "multiline":
-                        INPUT_MODE = "multiline"
-                        print(
-                            "Switched to multiline mode, validate is done by EOF <Ctrl+D>"
-                        )
-                    case "quit":
-                        print("Quit")
-                        sys.exit(0)
-                    case "help":
-                        print(HELP_MSG)
-                    case _:
-                        print("Command doesn't find")
-                        print("Type \033[1;4m/help\033[0m to display the help")
-                continue
+            while True:
+                print("\033[1;4m>>> User input:\033[0m", end="\n")
 
-            # empty user input
-            if not user_input:
-                continue
+                # get user question
+                if self.INPUT_MODE == "singleline":
+                    user_input = input().strip()
+                else:
+                    user_input = sys.stdin.read().strip()
 
-            print("\033[1;4m>>> Response:\033[0m", end="\n")
-            print(await chat.ask_question(user_input))
+                # if user input is command
+                if user_input.startswith("/"):
+                    self.command_parsing(user_input[1:])
+                    continue
+
+                # empty user input
+                if not user_input:
+                    print("\033[1;4m>>> Bad input\033[0m")
+                    continue
+
+                print("\033[1;4m>>> Response:\033[0m", end="\n")
+                print(await chat.ask_question(user_input))
+
+    def command_parsing(self, command: str) -> None:
+        """Recognize command"""
+        print("\033[1;4m>>> Command response:\033[0m")
+        match command:
+            case "singleline":
+                self.INPUT_MODE = "singleline"
+                print("Switched to singleline mode, validate is done by <enter>")
+            case "multiline":
+                self.INPUT_MODE = "multiline"
+                print("Switched to multiline mode, validate is done by EOF <Ctrl+D>")
+            case "quit":
+                print("Quit")
+                sys.exit(0)
+            case "help":
+                print(HELP_MSG)
+            case _:
+                print("Command doesn't find")
+                print("Type \033[1;4m/help\033[0m to display the help")
