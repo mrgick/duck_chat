@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Internet :: WWW/HTTP",
 ]
-dependencies = ["httpx>=0.27.0"]
+dependencies = ["curl-cffi>=0.7.1"]
 dynamic = ["version"]
 authors = [
     { name = "MrGick", email = "mrgickcool@gmail.com" },

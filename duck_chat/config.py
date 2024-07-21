@@ -1,7 +1,6 @@
+import tomllib
 from enum import Enum
 from pathlib import Path
-
-import tomllib
 
 
 class ModelType(Enum):

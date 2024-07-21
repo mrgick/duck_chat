@@ -1,3 +1,4 @@
+import asyncio
 import sys
 
 from .api import DuckChat
@@ -38,7 +39,9 @@ class CLI:
                     continue
 
                 print("\033[1;4m>>> Response:\033[0m", end="\n")
-                print(await chat.ask_question(user_input))
+                async for x in chat.ask_question(user_input):
+                    print(x, end="")
+                print()
 
     def command_parsing(self, command: str) -> None:
         """Recognize command"""
