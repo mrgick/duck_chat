@@ -23,7 +23,7 @@ class CLI:
 
                 # get user question
                 if self.INPUT_MODE == "singleline":
-                    user_input = input().strip()
+                    user_input = sys.stdin.readline().strip()
                 else:
                     user_input = sys.stdin.read().strip()
 
@@ -34,7 +34,7 @@ class CLI:
 
                 # empty user input
                 if not user_input:
-                    print("\033[1;4m>>> Bad input\033[0m")
+                    print("Bad input")
                     continue
 
                 print("\033[1;4m>>> Response:\033[0m", end="\n")
