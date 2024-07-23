@@ -1,25 +1,41 @@
-import json
 from types import TracebackType
 from typing import Self
 
-import httpx
+import aiohttp
+import msgspec
 
-from .config import ModelType
+from .models import History, ModelType
 
 
 class DuckChat:
     def __init__(
         self,
         model: ModelType = ModelType.Claude,
-        client: httpx.AsyncClient = httpx.AsyncClient(),
+        session: aiohttp.ClientSession | None = None,
     ) -> None:
-        self._client = client
-        self._model = model
-        self._vqd = None
-        self._history = []
+        self._session = session or aiohttp.ClientSession(
+            headers={
+                "Host": "duckduckgo.com",
+                "Accept": "text/event-stream",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Referer": "https://duckduckgo.com/",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+                "DNT": "1",
+                "Sec-GPC": "1",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+                "TE": "trailers",
+            }
+        )
+        self.vqd = []
+        self.history = History(model, [])
+        self.__encoder = msgspec.json.Encoder()
+        self.__decoder = msgspec.json.Decoder()
 
     async def __aenter__(self) -> Self:
-        await self._client.__aenter__()
         return self
 
     async def __aexit__(
@@ -28,91 +44,61 @@ class DuckChat:
         exc_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
-        await self._client.__aexit__(exc_type, exc_value, traceback)
+        await self._session.__aexit__(exc_type, exc_value, traceback)
 
-    def get_headers(self):
-        return {
-            "Host": "duckduckgo.com",
-            "Accept": "text/event-stream",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Referer": "https://duckduckgo.com/",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
-            "DNT": "1",
-            "Sec-GPC": "1",
-            "Connection": "keep-alive",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
-            "TE": "trailers",
-        }
+    async def get_vqd(self) -> None:
+        """Get new x-vqd-4 token"""
+        async with self._session.get(
+            "https://duckduckgo.com/duckchat/v1/status", headers={"x-vqd-accept": "1"}
+        ) as response:
+            self.vqd.append(response.headers.get("x-vqd-4"))
 
-    async def simulate_browser_reqs(self) -> None:
-        response = await self._client.get(
-            "https://duckduckgo.com/country.json",
-            headers={
-                **self.get_headers(),
-                **{"X-Requested-With": "XMLHttpRequest"},
-            },
-        )
-        if response.status_code != httpx.codes.OK:
-            print("Can't get country json (maybe ip ban)")
-
-    async def get_vqd(self, first: bool) -> None:
-        headers = self.get_headers()
-        headers["Cache-Control"] = "no-store"
-        if first:
-            headers["x-vqd-accept"] = "1"
-        response = await self._client.get(
-            "https://duckduckgo.com/duckchat/v1/status", headers=headers
-        )
-        vqd = response.headers.get("x-vqd-4")
-        if vqd:
-            self._vqd = vqd
-
-    async def get_res(self) -> str:
-        message = []
-        async with self._client.stream(
-            "POST",
+    async def get_answer(self) -> str:
+        """Get message answer from chatbot"""
+        message = ""
+        async with self._session.post(
             "https://duckduckgo.com/duckchat/v1/chat",
             headers={
-                **self.get_headers(),
-                **{
-                    "Content-Type": "application/json",
-                    "x-vqd-4": self._vqd,
-                },
+                "Content-Type": "application/json",
+                "x-vqd-4": self.vqd[-1],
             },
-            json={
-                "model": self._model.value,
-                "messages": self._history,
-            },
+            data=self.__encoder.encode(self.history),
         ) as response:
-            async for chunk in response.aiter_lines():
-                chunk = chunk.replace("data: ", "").replace("\n", "").strip()
-                if not chunk or chunk == "[DONE]":
-                    continue
-                try:
-                    obj = json.loads(chunk)
-                    if type(obj) is dict and obj.get("message"):
-                        message.append(obj["message"])
-                except Exception:
-                    print(f"Unparsed chunk: {chunk}")
-            new_vqd = response.headers.get("x-vqd-4")
-        if new_vqd:
-            self._vqd = new_vqd
-        return "".join(message)
+            v = await response.read()
+            message = "".join(
+                x.get("message", "")
+                for x in self.__decoder.decode(
+                    b"[" + (v).replace(b"\n\ndata: ", b",")[6:-9] + b"]"
+                )
+            )
+        self.vqd.append(response.headers.get("x-vqd-4"))
+        return message
 
     async def ask_question(self, query: str) -> str:
-        try:
-            if not self._history:
-                await self.simulate_browser_reqs()
-                await self.get_vqd(first=True)
-            else:
-                await self.get_vqd(first=False)
-            self._history.append({"role": "user", "content": query})
-            result = await self.get_res()
-            self._history.append({"role": "assistant", "content": result})
-            return result
-        except Exception as e:
-            print(e)
+        """Get answer from chat AI"""
+        if not self.vqd:
+            await self.get_vqd()
+        self.history.add_input(query)
+
+        message = await self.get_answer()
+
+        self.history.add_answer(message)
+        return message
+
+    async def reask_question(self, num: int) -> str:
+        """Get answer from chat AI"""
+
+        self.vqd = self.vqd[:num]
+
+        if not self.history.messages:
             return ""
+
+        if not self.vqd:
+            await self.get_vqd()
+            self.history.messages = [self.history.messages[0]]
+        else:
+            self.history.messages = self.history.messages[: (num * 2 - 1)]
+        message = await self.get_answer()
+        self.history.add_answer(message)
+
+        return message
