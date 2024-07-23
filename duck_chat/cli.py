@@ -1,7 +1,8 @@
-import sys
 import readline
+import sys
 import tomllib
 from pathlib import Path
+
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -12,7 +13,8 @@ HELP_MSG = (
     "\033[1;1m- /help         \033[0mDisplay the help message\n"
     "\033[1;1m- /singleline   \033[0mEnable singleline mode, validate is done by <enter>\n"
     "\033[1;1m- /multiline    \033[0mEnable multiline mode, validate is done by EOF <Ctrl+D>\n"
-    "\033[1;1m- /quit         \033[0mQuit"
+    "\033[1;1m- /quit         \033[0mQuit\n"
+    "\033[1;1m- /retry        \033[0mRegenerate answer to № prompt (default /retry 1)"
 )
 
 COMMANDS = {"help", "singleline", "multiline", "quit", "retry"}
@@ -41,7 +43,9 @@ class CLI:
 
     async def run(self) -> None:
         """Base loop program"""
-        async with DuckChat(model=self.read_model_from_conf()) as chat:
+        model = self.read_model_from_conf()
+        print(f"Using \033[1;4m{model.value}\033[0m")
+        async with DuckChat(model) as chat:
             print("Type \033[1;4m/help\033[0m to display the help")
 
             while True:
@@ -80,8 +84,8 @@ class CLI:
             user_input = "".join(contents)
         return user_input.strip()
 
-    def switch_input_mode(self) -> None:
-        if self.INPUT_MODE == "singleline":
+    def switch_input_mode(self, mode: str) -> None:
+        if mode == "singleline":
             self.INPUT_MODE = "singleline"
             print("Switched to singleline mode, validate is done by <enter>")
         else:
@@ -93,14 +97,14 @@ class CLI:
         print("\033[1;4m>>> Command response:\033[0m")
         match args[0][1:]:
             case "singleline":
-                self.switch_input_mode()
+                self.switch_input_mode("singleline")
             case "multiline":
-                self.switch_input_mode()
+                self.switch_input_mode("multiline")
             case "quit":
-                self.quit()
-            case "help":
                 print("Quit")
                 sys.exit(0)
+            case "help":
+                print(HELP_MSG)
             case "retry":
                 if self.COUNT == 1:
                     return
@@ -129,6 +133,6 @@ class CLI:
             with open(filepath, "rb") as f:
                 conf = tomllib.load(f)
                 model_name = conf["model"]
-            if ModelType[model_name]:
+            if model_name in ModelType:
                 return ModelType[model_name]
         return ModelType.Claude
