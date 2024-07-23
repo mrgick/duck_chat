@@ -26,11 +26,9 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Internet :: WWW/HTTP",
 ]
-dependencies = ["curl-cffi>=0.7.1"]
+dependencies = ["aiohttp[speedups]>=3.9.5", "msgspec>=0.18.6"]
 dynamic = ["version"]
-authors = [
-    { name = "MrGick", email = "mrgickcool@gmail.com" },
-]
+authors = [{ name = "MrGick", email = "mrgickcool@gmail.com" }]
 
 [tool.hatch.version]
 path = "duck_chat/__init__.py"

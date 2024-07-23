@@ -1,14 +1,16 @@
-import asyncio
 import sys
+import tomllib
+from pathlib import Path
 
 from .api import DuckChat
-from .config import ModelType
+from .models import ModelType
 
-HELP_MSG = """
-\033[1;1m- /help         \033[0mDisplay the help message
-\033[1;1m- /singleline   \033[0mEnable singleline mode, validate is done by <enter>
-\033[1;1m- /multiline    \033[0mEnable multiline mode, validate is done by EOF <Ctrl+D>
-\033[1;1m- /quit         \033[0mQuit"""[1:] # noqa
+HELP_MSG = (
+    "\033[1;1m- /help         \033[0mDisplay the help message\n"
+    "\033[1;1m- /singleline   \033[0mEnable singleline mode, validate is done by <enter>\n"
+    "\033[1;1m- /multiline    \033[0mEnable multiline mode, validate is done by EOF <Ctrl+D>\n"
+    "\033[1;1m- /quit         \033[0mQuit"
+)
 
 
 class CLI:
@@ -16,7 +18,7 @@ class CLI:
 
     async def run(self) -> None:
         """Base loop program"""
-        async with DuckChat(model=ModelType.read_model_from_conf()) as chat:
+        async with DuckChat(model=self.read_model_from_conf()) as chat:
             print("Type \033[1;4m/help\033[0m to display the help")
 
             while True:
@@ -39,9 +41,7 @@ class CLI:
                     continue
 
                 print("\033[1;4m>>> Response:\033[0m", end="\n")
-                async for x in chat.ask_question(user_input):
-                    print(x, end="")
-                print()
+                print(await chat.ask_question(user_input))
 
     def command_parsing(self, command: str) -> None:
         """Recognize command"""
@@ -61,3 +61,13 @@ class CLI:
             case _:
                 print("Command doesn't find")
                 print("Type \033[1;4m/help\033[0m to display the help")
+
+    def read_model_from_conf(self):
+        filepath = Path.home() / ".config" / "hey" / "conf.toml"
+        if filepath.exists():
+            with open(filepath, "rb") as f:
+                conf = tomllib.load(f)
+                model_name = conf["model"]
+            if ModelType[model_name]:
+                return ModelType[model_name]
+        return ModelType.Claude
