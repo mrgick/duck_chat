@@ -114,6 +114,8 @@ class CLI:
                     count = len(chat.vqd) - 1
                 if count < 0:
                     count = -count
+                if count >= len(chat.vqd):
+                    count = len(chat.vqd) - 1
                 print(f"\033[1;4m>>> REDO Response №{count}:\033[0m", end="\n")
                 self.answer_print(await chat.reask_question(count))
                 self.COUNT = count + 1
@@ -133,6 +135,6 @@ class CLI:
             with open(filepath, "rb") as f:
                 conf = tomllib.load(f)
                 model_name = conf["model"]
-            if model_name in ModelType:
+            if model_name in (x.name for x in ModelType):
                 return ModelType[model_name]
         return ModelType.Claude

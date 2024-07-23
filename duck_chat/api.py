@@ -88,6 +88,8 @@ class DuckChat:
     async def reask_question(self, num: int) -> str:
         """Get answer from chat AI"""
 
+        if num >= len(self.vqd):
+            num = len(self.vqd)-1
         self.vqd = self.vqd[:num]
 
         if not self.history.messages:
@@ -97,6 +99,7 @@ class DuckChat:
             await self.get_vqd()
             self.history.messages = [self.history.messages[0]]
         else:
+            num = min(num, len(self.vqd))
             self.history.messages = self.history.messages[: (num * 2 - 1)]
         message = await self.get_answer()
         self.history.add_answer(message)
