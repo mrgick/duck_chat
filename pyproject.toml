@@ -38,7 +38,7 @@ Homepage = "https://github.com/endicomp/service_toolkit"
 Documentation = "https://wiki.yandex.ru/nashi-razrabotki/service-toolkit/"
 
 [project.optional-dependencies]
-all = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1"]
+dev = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1"]
 
 
 [tool.isort]

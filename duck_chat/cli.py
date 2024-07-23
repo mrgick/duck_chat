@@ -15,6 +15,7 @@ HELP_MSG = (
 
 class CLI:
     INPUT_MODE = "singleline"
+    COUNT = 1
 
     async def run(self) -> None:
         """Base loop program"""
@@ -22,7 +23,7 @@ class CLI:
             print("Type \033[1;4m/help\033[0m to display the help")
 
             while True:
-                print("\033[1;4m>>> User input:\033[0m", end="\n")
+                print(f"\033[1;4m>>> User input №{self.COUNT}:\033[0m", end="\n")
 
                 # get user question
                 if self.INPUT_MODE == "singleline":
@@ -32,6 +33,20 @@ class CLI:
 
                 # if user input is command
                 if user_input.startswith("/"):
+                    # TODO: very dirty
+                    if "/retry" in user_input:
+                        if self.COUNT == 1:
+                            continue
+                        try:
+                            count = int(user_input.split()[1])
+                        except Exception:
+                            count = len(chat.vqd) - 1
+                        if count < 0:
+                            count = -count
+                        print(f"\033[1;4m>>> Response №{count}:\033[0m", end="\n")
+                        print(await chat.reask_question(count))
+                        self.COUNT = count + 1
+                        continue
                     self.command_parsing(user_input[1:])
                     continue
 
@@ -40,8 +55,9 @@ class CLI:
                     print("Bad input")
                     continue
 
-                print("\033[1;4m>>> Response:\033[0m", end="\n")
+                print(f"\033[1;4m>>> Response №{self.COUNT}:\033[0m", end="\n")
                 print(await chat.ask_question(user_input))
+                self.COUNT += 1
 
     def command_parsing(self, command: str) -> None:
         """Recognize command"""

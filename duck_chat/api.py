@@ -30,7 +30,7 @@ class DuckChat:
                 "TE": "trailers",
             }
         )
-        self.vqd = None
+        self.vqd = []
         self.history = History(model, [])
         self.__encoder = msgspec.json.Encoder()
         self.__decoder = msgspec.json.Decoder()
@@ -46,13 +46,12 @@ class DuckChat:
     ) -> None:
         await self._session.__aexit__(exc_type, exc_value, traceback)
 
-    async def get_vqd(self, first: bool) -> None:
+    async def get_vqd(self) -> None:
         """Get new x-vqd-4 token"""
-        headers = {"x-vqd-accept": "1"} if first else {}
         async with self._session.get(
-            "https://duckduckgo.com/duckchat/v1/status", headers=headers
+            "https://duckduckgo.com/duckchat/v1/status", headers={"x-vqd-accept": "1"}
         ) as response:
-            self.vqd = response.headers.get("x-vqd-4") or self.vqd
+            self.vqd.append(response.headers.get("x-vqd-4"))
 
     async def get_answer(self) -> str:
         """Get message answer from chatbot"""
@@ -61,30 +60,45 @@ class DuckChat:
             "https://duckduckgo.com/duckchat/v1/chat",
             headers={
                 "Content-Type": "application/json",
-                "x-vqd-4": self.vqd,
+                "x-vqd-4": self.vqd[-1],
             },
             data=self.__encoder.encode(self.history),
         ) as response:
+            v = await response.read()
             message = "".join(
-                x["message"]
+                x.get("message", "")
                 for x in self.__decoder.decode(
-                    b"["
-                    + (await response.read()).replace(b"\n\ndata: ", b",")[6:-9]
-                    + b"]"
+                    b"[" + (v).replace(b"\n\ndata: ", b",")[6:-9] + b"]"
                 )
             )
-        self.vqd = response.headers.get("x-vqd-4") or self.vqd
+        self.vqd.append(response.headers.get("x-vqd-4"))
         return message
 
     async def ask_question(self, query: str) -> str:
         """Get answer from chat AI"""
         if not self.vqd:
-            await self.get_vqd(first=True)
-
+            await self.get_vqd()
         self.history.add_input(query)
 
-        # double try to get answer
         message = await self.get_answer()
 
         self.history.add_answer(message)
+        return message
+
+    async def reask_question(self, num: int) -> str:
+        """Get answer from chat AI"""
+
+        self.vqd = self.vqd[:num]
+
+        if not self.history.messages:
+            return ""
+
+        if not self.vqd:
+            await self.get_vqd()
+            self.history.messages = [self.history.messages[0]]
+        else:
+            self.history.messages = self.history.messages[: (num * 2 - 1)]
+        message = await self.get_answer()
+        self.history.add_answer(message)
+
         return message
