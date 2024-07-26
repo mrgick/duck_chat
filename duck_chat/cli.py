@@ -138,3 +138,9 @@ class CLI:
             if model_name in (x.name for x in ModelType):
                 return ModelType[model_name]
         return ModelType.Claude
+
+
+def safe_entry_point():
+    import asyncio
+
+    asyncio.run(CLI().run())

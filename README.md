@@ -21,7 +21,7 @@ By using this client you accept [DuckDuckGo AI Chat ToS](https://duckduckgo.com/
 
    - Install auto
    ```bash
-   pip install https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
+   pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
    ```
    - Install manually
      1. Clone repo
@@ -32,13 +32,17 @@ By using this client you accept [DuckDuckGo AI Chat ToS](https://duckduckgo.com/
      2. Install package
 
        ```bash
-       pip install .
+       pip install -U .
        ```
 
 ## Usage
 - Using terminal
 ```bash
 python -m duck_chat
+```
+or
+```
+duck_chat
 ```
 
 > P.S. You can use hey config ```".config/hey/conf.toml"``` Thanks [k-aito](https://github.com/mrgick/duckduckgo-chat-ai/pull/1)

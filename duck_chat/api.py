@@ -89,7 +89,7 @@ class DuckChat:
         """Get answer from chat AI"""
 
         if num >= len(self.vqd):
-            num = len(self.vqd)-1
+            num = len(self.vqd) - 1
         self.vqd = self.vqd[:num]
 
         if not self.history.messages:
