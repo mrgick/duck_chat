@@ -64,10 +64,13 @@ class DuckChat:
             "https://duckduckgo.com/duckchat/v1/status", headers={"x-vqd-accept": "1"}
         ) as response:
             if response.status == 429:
-                err_message = self.__decoder.decode(await response.read()).get(
-                    "type", ""
-                )
-                raise RatelimitException(err_message)
+                res = await response.read()
+                try:
+                    err_message = self.__decoder.decode(res).get("type", "")
+                except Exception:
+                    raise DuckChatException(res.decode())  # noqa: B904
+                else:
+                    raise RatelimitException(err_message)
             self.vqd.append(response.headers.get("x-vqd-4"))
             if not self.vqd:
                 raise DuckChatException("No x-vqd-4")
@@ -84,12 +87,19 @@ class DuckChat:
             data=self.__encoder.encode(self.history),
         ) as response:
             res = await response.read()
+            if response.status == 429:
+                raise RatelimitException(res.decode())
             data = b",".join(
                 res.lstrip(b"data: ")
                 .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
                 .split(b"\n\ndata: ")
             )
-            data = self.__decoder.decode(b"[" + data + b"]")
+            try:
+                data = self.__decoder.decode(b"[" + data + b"]")
+            except Exception:
+                raise DuckChatException(  # noqa: B904
+                    f"Couldn't parse body={res.decode()}"
+                )
             message = []
             for x in data:
                 if x.get("action") == "error":
