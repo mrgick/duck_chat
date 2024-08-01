@@ -3,7 +3,13 @@ from typing import Self
 
 import aiohttp
 import msgspec
+from fake_useragent import UserAgent
 
+from .exceptions import (
+    ConversationLimitException,
+    DuckChatException,
+    RatelimitException,
+)
 from .models import History, ModelType
 
 
@@ -12,7 +18,13 @@ class DuckChat:
         self,
         model: ModelType = ModelType.Claude,
         session: aiohttp.ClientSession | None = None,
+        user_agent: UserAgent | str = UserAgent(min_version=120.0),
     ) -> None:
+        if type(user_agent) is str:
+            self.user_agent = user_agent
+        else:
+            self.user_agent = user_agent.random  # type: ignore
+
         self._session = session or aiohttp.ClientSession(
             headers={
                 "Host": "duckduckgo.com",
@@ -20,7 +32,7 @@ class DuckChat:
                 "Accept-Language": "en-US,en;q=0.5",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Referer": "https://duckduckgo.com/",
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
+                "User-Agent": self.user_agent,
                 "DNT": "1",
                 "Sec-GPC": "1",
                 "Connection": "keep-alive",
@@ -30,7 +42,7 @@ class DuckChat:
                 "TE": "trailers",
             }
         )
-        self.vqd = []
+        self.vqd: list[str | None] = []
         self.history = History(model, [])
         self.__encoder = msgspec.json.Encoder()
         self.__decoder = msgspec.json.Decoder()
@@ -51,11 +63,20 @@ class DuckChat:
         async with self._session.get(
             "https://duckduckgo.com/duckchat/v1/status", headers={"x-vqd-accept": "1"}
         ) as response:
+            if response.status == 429:
+                res = await response.read()
+                try:
+                    err_message = self.__decoder.decode(res).get("type", "")
+                except Exception:
+                    raise DuckChatException(res.decode())
+                else:
+                    raise RatelimitException(err_message)
             self.vqd.append(response.headers.get("x-vqd-4"))
+            if not self.vqd:
+                raise DuckChatException("No x-vqd-4")
 
     async def get_answer(self) -> str:
         """Get message answer from chatbot"""
-        message = ""
         async with self._session.post(
             "https://duckduckgo.com/duckchat/v1/chat",
             headers={
@@ -64,15 +85,33 @@ class DuckChat:
             },
             data=self.__encoder.encode(self.history),
         ) as response:
-            v = await response.read()
-            message = "".join(
-                x.get("message", "")
-                for x in self.__decoder.decode(
-                    b"[" + (v).replace(b"\n\ndata: ", b",")[6:-9] + b"]"
+            res = await response.read()
+            if response.status == 429:
+                raise RatelimitException(res.decode())
+            try:
+                data = self.__decoder.decode(
+                    b"["
+                    + b",".join(
+                        res.lstrip(b"data: ")
+                        .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
+                        .split(b"\n\ndata: ")
+                    )
+                    + b"]"
                 )
-            )
+            except Exception:
+                raise DuckChatException(f"Couldn't parse body={res.decode()}")
+            message = []
+            for x in data:
+                if x.get("action") == "error":
+                    err_message = x.get("type", "") or str(x)
+                    if x.get("status") == 429:
+                        if err_message == "ERR_CONVERSATION_LIMIT":
+                            raise ConversationLimitException(err_message)
+                        raise RatelimitException(err_message)
+                    raise DuckChatException(err_message)
+                message.append(x.get("message", ""))
         self.vqd.append(response.headers.get("x-vqd-4"))
-        return message
+        return "".join(message)
 
     async def ask_question(self, query: str) -> str:
         """Get answer from chat AI"""

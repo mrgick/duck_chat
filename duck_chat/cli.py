@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 from .api import DuckChat
+from .exceptions import DuckChatException
 from .models import ModelType
 
 HELP_MSG = (
@@ -64,8 +65,12 @@ class CLI:
                     continue
 
                 print(f"\033[1;4m>>> Response №{self.COUNT}:\033[0m", end="\n")
-                self.answer_print(await chat.ask_question(user_input))
-                self.COUNT += 1
+                try:
+                    self.answer_print(await chat.ask_question(user_input))
+                except DuckChatException as e:
+                    print(f"Error occurred: {str(e)}")
+                else:
+                    self.COUNT += 1
 
     def get_user_input(self) -> str:
         if self.INPUT_MODE == "singleline":
@@ -117,30 +122,36 @@ class CLI:
                 if count >= len(chat.vqd):
                     count = len(chat.vqd) - 1
                 print(f"\033[1;4m>>> REDO Response №{count}:\033[0m", end="\n")
-                self.answer_print(await chat.reask_question(count))
-                self.COUNT = count + 1
+                try:
+                    self.answer_print(await chat.reask_question(count))
+                except DuckChatException as e:
+                    print(f"Error occurred: {str(e)}")
+                else:
+                    self.COUNT = count + 1
             case _:
                 print("Command doesn't find")
                 print("Type \033[1;4m/help\033[0m to display the help")
 
-    def answer_print(self, query: str):
+    def answer_print(self, query: str) -> None:
         if "`" in query:  # block of code
             self.console.print(Markdown(query))
         else:
             print(query)
 
-    def read_model_from_conf(self):
+    def read_model_from_conf(self) -> ModelType:
         filepath = Path.home() / ".config" / "hey" / "conf.toml"
         if filepath.exists():
             with open(filepath, "rb") as f:
                 conf = tomllib.load(f)
                 model_name = conf["model"]
             if model_name in (x.name for x in ModelType):
+                if model_name == "GPT3":
+                    print("\033[1;1m GPT3 is deprecated! Use GPT4o\033[0m")
                 return ModelType[model_name]
         return ModelType.Claude
 
 
-def safe_entry_point():
+def safe_entry_point() -> None:
     import asyncio
 
     asyncio.run(CLI().run())

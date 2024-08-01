@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 license = { file = "LICENSE" }
-dependencies = ["aiohttp[speedups]>=3.9.5", "msgspec>=0.18.6", "rich>=13.7.1"]
+dependencies = ["aiohttp[speedups]>=3.9.5", "msgspec>=0.18.6", "rich>=13.7.1", "fake-useragent>=1.5.1"]
 dynamic = ["version"]
 authors = [{ name = "MrGick", email = "mrgickcool@gmail.com" }]
 
@@ -39,7 +39,7 @@ Homepage = "https://github.com/mrgick/duckduckgo-chat-ai"
 Issues = "https://github.com/mrgick/duckduckgo-chat-ai/issues"
 
 [project.optional-dependencies]
-dev = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1"]
+dev = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1", "mypy>=1.11.1"]
 
 [project.scripts]
 duck_chat = "duck_chat.cli:safe_entry_point"
@@ -53,14 +53,20 @@ lint.select = [
     "E", # pycodestyle errors
     "W", # pycodestyle warnings
     "F", # pyflakes
-    # "I",  # isort
+    "I",  # isort
     "C", # flake8-comprehensions
     "B", # flake8-bugbear
 ]
+line-length = 120
 lint.ignore = [
-    "E501", # line too long, handled by black
     "B008", # do not perform function calls in argument defaults
-    "C901", # too complex
-    "F403", # star import
-    "F405", # star import
+    "C901", # too complex ( > 10)
+    "B904", # raise in except 
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.11"
+show_error_codes = true
+strict = true
+exclude = ['format.py', "tests/", "build/"]
