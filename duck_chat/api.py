@@ -77,7 +77,6 @@ class DuckChat:
 
     async def get_answer(self) -> str:
         """Get message answer from chatbot"""
-        message = ""
         async with self._session.post(
             "https://duckduckgo.com/duckchat/v1/chat",
             headers={
@@ -95,7 +94,7 @@ class DuckChat:
                 .split(b"\n\ndata: ")
             )
             try:
-                data = self.__decoder.decode(b"[" + data + b"]")
+                data: list[dict] = self.__decoder.decode(b"[" + data + b"]")
             except Exception:
                 raise DuckChatException(  # noqa: B904
                     f"Couldn't parse body={res.decode()}"
@@ -103,7 +102,7 @@ class DuckChat:
             message = []
             for x in data:
                 if x.get("action") == "error":
-                    err_message = x.get("type", "")
+                    err_message = x.get("type", "") or str(x)
                     if x.get("status") == 429:
                         if err_message == "ERR_CONVERSATION_LIMIT":
                             raise ConversationLimitException(err_message)
