@@ -18,12 +18,12 @@ class DuckChat:
         self,
         model: ModelType = ModelType.Claude,
         session: aiohttp.ClientSession | None = None,
-        user_agent: UserAgent | str = UserAgent(),
+        user_agent: UserAgent | str = UserAgent(min_version=120.0),
     ) -> None:
         if type(user_agent) is str:
             self.user_agent = user_agent
         else:
-            self.user_agent = user_agent.random
+            self.user_agent = user_agent.random  # type: ignore
 
         self._session = session or aiohttp.ClientSession(
             headers={
@@ -42,7 +42,7 @@ class DuckChat:
                 "TE": "trailers",
             }
         )
-        self.vqd = []
+        self.vqd: list[str | None] = []
         self.history = History(model, [])
         self.__encoder = msgspec.json.Encoder()
         self.__decoder = msgspec.json.Decoder()
@@ -68,7 +68,7 @@ class DuckChat:
                 try:
                     err_message = self.__decoder.decode(res).get("type", "")
                 except Exception:
-                    raise DuckChatException(res.decode())  # noqa: B904
+                    raise DuckChatException(res.decode())
                 else:
                     raise RatelimitException(err_message)
             self.vqd.append(response.headers.get("x-vqd-4"))
@@ -88,17 +88,18 @@ class DuckChat:
             res = await response.read()
             if response.status == 429:
                 raise RatelimitException(res.decode())
-            data = b",".join(
-                res.lstrip(b"data: ")
-                .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
-                .split(b"\n\ndata: ")
-            )
             try:
-                data: list[dict] = self.__decoder.decode(b"[" + data + b"]")
-            except Exception:
-                raise DuckChatException(  # noqa: B904
-                    f"Couldn't parse body={res.decode()}"
+                data = self.__decoder.decode(
+                    b"["
+                    + b",".join(
+                        res.lstrip(b"data: ")
+                        .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
+                        .split(b"\n\ndata: ")
+                    )
+                    + b"]"
                 )
+            except Exception:
+                raise DuckChatException(f"Couldn't parse body={res.decode()}")
             message = []
             for x in data:
                 if x.get("action") == "error":
@@ -109,9 +110,8 @@ class DuckChat:
                         raise RatelimitException(err_message)
                     raise DuckChatException(err_message)
                 message.append(x.get("message", ""))
-        message = "".join(message)
         self.vqd.append(response.headers.get("x-vqd-4"))
-        return message
+        return "".join(message)
 
     async def ask_question(self, query: str) -> str:
         """Get answer from chat AI"""

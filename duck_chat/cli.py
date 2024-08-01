@@ -132,13 +132,13 @@ class CLI:
                 print("Command doesn't find")
                 print("Type \033[1;4m/help\033[0m to display the help")
 
-    def answer_print(self, query: str):
+    def answer_print(self, query: str) -> None:
         if "`" in query:  # block of code
             self.console.print(Markdown(query))
         else:
             print(query)
 
-    def read_model_from_conf(self):
+    def read_model_from_conf(self) -> ModelType:
         filepath = Path.home() / ".config" / "hey" / "conf.toml"
         if filepath.exists():
             with open(filepath, "rb") as f:
@@ -151,7 +151,7 @@ class CLI:
         return ModelType.Claude
 
 
-def safe_entry_point():
+def safe_entry_point() -> None:
     import asyncio
 
     asyncio.run(CLI().run())
