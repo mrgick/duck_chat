@@ -5,8 +5,7 @@ import msgspec
 
 class ModelType(Enum):
     Claude = "claude-3-haiku-20240307"
-    GPT3 = "gpt-3.5-turbo-0125"  # Deprecated
-    Llama = "meta-llama/Llama-3-70b-chat-hf"
+    Llama = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
     GPT4o = "gpt-4o-mini"
     Mixtral = "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
