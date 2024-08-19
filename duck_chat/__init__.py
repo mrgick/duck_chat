@@ -1,4 +1,4 @@
-__version__ = "v1.3.2"
+__version__ = "v1.3.3"
 from .api import DuckChat
 from .models import ModelType
 
