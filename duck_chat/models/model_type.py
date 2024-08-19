@@ -1,4 +1,4 @@
-from enum import Enum
+# Testfrom enum import Enum
 
 
 class ModelType(Enum):
