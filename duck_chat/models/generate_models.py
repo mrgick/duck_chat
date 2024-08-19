@@ -32,7 +32,7 @@ def get_html() -> str:
     return html
 
 
-def parse_html(html) -> dict[str, str]:
+def parse_html(html: str) -> dict[str, str]:
     """Get models from html page (labels tags)"""
 
     # Parse the content of the webpage
@@ -58,11 +58,12 @@ def write_models(data: dict[str, str], path: Path) -> None:
             f.write(f'    {k} = "{v}"\n')
 
 
-def main():
+def main() -> None:
     html = get_html()
     data = parse_html(html)
-    path = Path().absolute() / "duck_chat" / "models" / "model_type.py"
+    path = Path(__file__).resolve().parent / "model_type.py"
     write_models(data, path)
+    print(f"Generate new models on {path}")
 
 
 if __name__ == "__main__":
