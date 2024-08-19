@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -50,9 +51,9 @@ def parse_html(html) -> dict[str, str]:
     return data
 
 
-def write_models(data: dict[str, str]) -> None:
+def write_models(data: dict[str, str], path: Path) -> None:
     """Generate new model_type.py"""
-    with open("model_type.py", "w") as f:
+    with open(path, "w") as f:
         f.write(f"# generated at {datetime.now(timezone.utc).isoformat()}\n")
         f.write("from enum import Enum\n\n\nclass ModelType(Enum):\n")
         for k, v in data.items():
@@ -62,7 +63,8 @@ def write_models(data: dict[str, str]) -> None:
 def main():
     html = get_html()
     data = parse_html(html)
-    write_models(data)
+    path = Path().absolute() / "duck_chat" / "models" / "model_type.py"
+    write_models(data, path)
 
 
 if __name__ == "__main__":

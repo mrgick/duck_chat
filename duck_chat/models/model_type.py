@@ -1,4 +1,3 @@
-# generated at 2024-08-16T18:34:06.382336+00:00
 from enum import Enum
 
 
