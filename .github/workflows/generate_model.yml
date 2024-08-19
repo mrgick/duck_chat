@@ -1,0 +1,46 @@
+name: Generate Model and Commit
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # every day at midnight
+  push:
+    branches:
+      - main
+
+jobs:
+  generate_model:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install .[dev]
+
+      - name: Set up Chrome and ChromeDriver
+        uses: browser-actions/setup-chrome@v1.7.2
+        with:
+          install-chromedriver: true
+
+      - name: Run generate_models.py
+        run: |
+          python duck_chat/models/generate_models.py
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generated model_type.py"
+          file_pattern: "duck_chat/models/model_type.py"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
