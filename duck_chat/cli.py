@@ -14,11 +14,21 @@ HELP_MSG = (
     "\033[1;1m- /help         \033[0mDisplay the help message\n"
     "\033[1;1m- /singleline   \033[0mEnable singleline mode, validate is done by <enter>\n"
     "\033[1;1m- /multiline    \033[0mEnable multiline mode, validate is done by EOF <Ctrl+D>\n"
+    "\033[1;1m- /stream_on   \033[0mEnable stream mode\n"
+    "\033[1;1m- /stream_off    \033[0mDisable stream mode\n"
     "\033[1;1m- /quit         \033[0mQuit\n"
     "\033[1;1m- /retry        \033[0mRegenerate answer to № prompt (default /retry 1)"
 )
 
-COMMANDS = {"help", "singleline", "multiline", "quit", "retry"}
+COMMANDS = {
+    "help",
+    "singleline",
+    "multiline",
+    "quit",
+    "retry",
+    "stream_on",
+    "stream_off",
+}
 
 
 def completer(text: str, state: int) -> str | None:
@@ -39,6 +49,7 @@ class CLI:
         readline.parse_and_bind("tab: complete")
         readline.set_completer(completer)
         self.INPUT_MODE = "singleline"
+        self.STREAM_MODE = False
         self.COUNT = 1
         self.console = Console()
 
@@ -66,7 +77,12 @@ class CLI:
 
                 print(f"\033[1;4m>>> Response №{self.COUNT}:\033[0m", end="\n")
                 try:
-                    self.answer_print(await chat.ask_question(user_input))
+                    if self.STREAM_MODE:
+                        async for message in chat.ask_question_stream(user_input):
+                            print(message, flush=True, end="")
+                        print()
+                    else:
+                        self.answer_print(await chat.ask_question(user_input))
                 except DuckChatException as e:
                     print(f"Error occurred: {str(e)}")
                 else:
@@ -97,6 +113,14 @@ class CLI:
             self.INPUT_MODE = "multiline"
             print("Switched to multiline mode, validate is done by EOF <Ctrl+D>")
 
+    def switch_stream_mode(self, mode: bool) -> None:
+        if mode:
+            self.STREAM_MODE = True
+            print("Switched to stream mode")
+        else:
+            self.STREAM_MODE = False
+            print("Switched to non stream mode")
+
     async def command_parsing(self, args: list[str], chat: DuckChat) -> None:
         """Recognize command"""
         print("\033[1;4m>>> Command response:\033[0m")
@@ -105,6 +129,10 @@ class CLI:
                 self.switch_input_mode("singleline")
             case "multiline":
                 self.switch_input_mode("multiline")
+            case "stream_on":
+                self.switch_stream_mode(True)
+            case "stream_off":
+                self.switch_stream_mode(False)
             case "quit":
                 print("Quit")
                 sys.exit(0)
@@ -123,7 +151,12 @@ class CLI:
                     count = len(chat.vqd) - 1
                 print(f"\033[1;4m>>> REDO Response №{count}:\033[0m", end="\n")
                 try:
-                    self.answer_print(await chat.reask_question(count))
+                    if self.STREAM_MODE:
+                        async for message in chat.reask_question_stream(count):
+                            print(message, flush=True, end="")
+                        print()
+                    else:
+                        self.answer_print(await chat.reask_question(count))
                 except DuckChatException as e:
                     print(f"Error occurred: {str(e)}")
                 else:
