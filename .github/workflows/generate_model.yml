@@ -13,6 +13,7 @@ jobs:
 
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -41,7 +42,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: Auto-generated model_type.py
+          commit-message: Auto-generated model_type.py
           title: Update Models
           branch: update-models
         env:
