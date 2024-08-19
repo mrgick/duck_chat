@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .[dev]
+          pip install .[generate_models]
 
       - name: Set up Chrome and ChromeDriver
         uses: browser-actions/setup-chrome@v1.7.2
