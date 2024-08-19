@@ -38,9 +38,11 @@ jobs:
         run: |
           python duck_chat/models/generate_models.py
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: "Auto-generated model_type.py"
-          file_pattern: "duck_chat/models/model_type.py"
+          commit_message: Auto-generated model_type.py
+          title: Update Models
+          branch: update-models
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

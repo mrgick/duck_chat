@@ -53,6 +53,7 @@ def parse_html(html) -> dict[str, str]:
 def write_models(data: dict[str, str], path: Path) -> None:
     """Generate new model_type.py"""
     with open(path, "w") as f:
+        f.write("# Test")
         f.write("from enum import Enum\n\n\nclass ModelType(Enum):\n")
         for k, v in data.items():
             f.write(f'    {k} = "{v}"\n')
