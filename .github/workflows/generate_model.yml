@@ -3,9 +3,9 @@ name: Generate Model and Commit
 on:
   schedule:
     - cron: '0 0 * * *'  # every day at midnight
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   generate_model:
