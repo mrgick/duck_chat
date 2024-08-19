@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Self
+from typing import AsyncGenerator, Self
 
 import aiohttp
 import msgspec
@@ -23,7 +23,7 @@ class DuckChat:
         if type(user_agent) is str:
             self.user_agent = user_agent
         else:
-            self.user_agent = user_agent.random  # type: ignore
+            self.user_agent = user_agent.random
 
         self._session = session or aiohttp.ClientSession(
             headers={
@@ -75,7 +75,7 @@ class DuckChat:
             if not self.vqd:
                 raise DuckChatException("No x-vqd-4")
 
-    async def get_answer(self) -> str:
+    async def get_answer(self) -> AsyncGenerator[str, None]:
         """Get message answer from chatbot"""
         async with self._session.post(
             "https://duckduckgo.com/duckchat/v1/chat",
@@ -85,33 +85,26 @@ class DuckChat:
             },
             data=self.__encoder.encode(self.history),
         ) as response:
-            res = await response.read()
             if response.status == 429:
-                raise RatelimitException(res.decode())
+                raise RatelimitException(await response.text())
             try:
-                data = self.__decoder.decode(
-                    b"["
-                    + b",".join(
-                        res.lstrip(b"data: ")
-                        .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
-                        .split(b"\n\ndata: ")
-                    )
-                    + b"]"
-                )
-            except Exception:
-                raise DuckChatException(f"Couldn't parse body={res.decode()}")
-            message = []
-            for x in data:
-                if x.get("action") == "error":
-                    err_message = x.get("type", "") or str(x)
-                    if x.get("status") == 429:
-                        if err_message == "ERR_CONVERSATION_LIMIT":
-                            raise ConversationLimitException(err_message)
-                        raise RatelimitException(err_message)
-                    raise DuckChatException(err_message)
-                message.append(x.get("message", ""))
+                async for line in response.content:
+                    if line.startswith(b"data: "):
+                        line = line[len("data: "):]
+                        if line.startswith(b"[DONE]"):
+                            break
+                        try:
+                            data = self.__decoder.decode(line)
+                            if isinstance(data, list):
+                                for message_part in data:
+                                    yield message_part.get("message", "")
+                            else:
+                                yield data.get("message", "")
+                        except Exception:
+                            raise DuckChatException(f"Couldn't parse body={line.decode()}")
+            except Exception as e:
+                raise DuckChatException(f"Error while streaming data: {str(e)}")
         self.vqd.append(response.headers.get("x-vqd-4"))
-        return "".join(message)
 
     async def ask_question(self, query: str) -> str:
         """Get answer from chat AI"""
@@ -119,28 +112,11 @@ class DuckChat:
             await self.get_vqd()
         self.history.add_input(query)
 
-        message = await self.get_answer()
+        full_message = []
+        async for part in self.get_answer():
+            print(part, end='', flush=True)
+            full_message.append(part)
 
-        self.history.add_answer(message)
-        return message
-
-    async def reask_question(self, num: int) -> str:
-        """Get answer from chat AI"""
-
-        if num >= len(self.vqd):
-            num = len(self.vqd) - 1
-        self.vqd = self.vqd[:num]
-
-        if not self.history.messages:
-            return ""
-
-        if not self.vqd:
-            await self.get_vqd()
-            self.history.messages = [self.history.messages[0]]
-        else:
-            num = min(num, len(self.vqd))
-            self.history.messages = self.history.messages[: (num * 2 - 1)]
-        message = await self.get_answer()
-        self.history.add_answer(message)
-
-        return message
+        full_message_str = "".join(full_message)
+        self.history.add_answer(full_message_str)
+        return full_message_str
