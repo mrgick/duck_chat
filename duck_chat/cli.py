@@ -54,21 +54,19 @@ class CLI:
 
                 user_input = self.get_user_input()
 
+                # user input is command
                 if user_input.startswith("/"):
                     await self.command_parsing(user_input.split(), chat)
                     continue
 
+                # empty user input
                 if not user_input:
                     print("Bad input")
                     continue
 
                 print(f"\033[1;4m>>> Response №{self.COUNT}:\033[0m", end="\n")
                 try:
-                    stream = "--stream" in user_input
-                    if stream:
-                        user_input = user_input.replace("--stream", "").strip()
-
-                    self.answer_print(await chat.ask_question(user_input, stream=stream))
+                    self.answer_print(await chat.ask_question(user_input))
                 except DuckChatException as e:
                     print(f"Error occurred: {str(e)}")
                 else:
@@ -135,7 +133,7 @@ class CLI:
                 print("Type \033[1;4m/help\033[0m to display the help")
 
     def answer_print(self, query: str) -> None:
-        if "`" in query:
+        if "`" in query:  # block of code
             self.console.print(Markdown(query))
         else:
             print(query)
