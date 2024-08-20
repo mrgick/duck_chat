@@ -1,24 +1,28 @@
-import tomllib
 from pathlib import Path
+from typing import Literal, Union
+
+import msgspec
+from platformdirs import user_config_dir
 
 from ..models import ModelType
 
 
-class Settings:
-    def __init__(self) -> None:
-        self.model = self.read_model_from_conf()
-        self.INPUT_MODE = "singleline"
-        self.STREAM_MODE = False
-        self.COUNT = 1
+class Settings(msgspec.Struct, rename="kebab"):
+    MODEL: str = list(ModelType)[0].name
+    INPUT_MODE: Union[Literal["singleline"], Literal["multiline"]] = "singleline"
+    STREAM_MODE: bool = False
 
-    def read_model_from_conf(self) -> ModelType:
-        filepath = Path.home() / ".config" / "hey" / "conf.toml"
-        if filepath.exists():
-            with open(filepath, "rb") as f:
-                conf = tomllib.load(f)
-                model_name = conf["model"]
-            if model_name in (x.name for x in ModelType):
-                if model_name == "GPT3":
-                    print("\033[1;1m GPT3 is deprecated! Use GPT4o\033[0m")
-                return ModelType[model_name]
-        return ModelType.Claude
+    @staticmethod
+    def get_settings() -> "Settings":
+        config_path: Path = Path(user_config_dir("duck_chat")) / "conf.toml"
+        if not config_path.exists():
+            s = Settings()
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(config_path, "wb") as f:
+                f.write(msgspec.toml.encode(s))
+            return s
+        with open(config_path, "rb") as f:
+            buff = f.read()
+        s = msgspec.toml.decode(buff, type=Settings)
+        print(s)
+        return s

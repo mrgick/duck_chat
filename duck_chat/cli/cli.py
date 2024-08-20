@@ -3,6 +3,7 @@ from rich.markdown import Markdown
 
 from ..api import DuckChat
 from ..exceptions import DuckChatException
+from ..models import ModelType
 from .commands import Commands
 from .config import Settings
 
@@ -10,12 +11,12 @@ from .config import Settings
 class CLI:
     def __init__(self) -> None:
         self.console = Console()
-        self.settings = Settings()
+        self.settings = Settings.get_settings()
         self.commands = Commands()
 
     async def run(self) -> None:
         """Base loop program"""
-        model = self.settings.model
+        model = ModelType[self.settings.MODEL]
         print(f"Using \033[1;4m{model.value}\033[0m")
         async with DuckChat(model) as chat:
             print("Type \033[1;4m/help\033[0m to display the help")
