@@ -93,9 +93,7 @@ class DuckChat:
                 data = self.__decoder.decode(
                     b"["
                     + b",".join(
-                        res.lstrip(b"data: ")
-                        .rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n")
-                        .split(b"\n\ndata: ")
+                        res.lstrip(b"data: ").rstrip(b"\n\ndata: [DONE][LIMIT_CONVERSATION]\n").split(b"\n\ndata: ")
                     )
                     + b"]"
                 )
@@ -169,9 +167,7 @@ class DuckChat:
                             if "message" in data and data["message"]:
                                 yield data["message"]
                         except Exception:
-                            raise DuckChatException(
-                                f"Couldn't parse body={chunk.decode()}"
-                            )
+                            raise DuckChatException(f"Couldn't parse body={chunk.decode()}")
             except Exception as e:
                 raise DuckChatException(f"Error while streaming data: {str(e)}")
         self.vqd.append(response.headers.get("x-vqd-4", ""))

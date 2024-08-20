@@ -44,7 +44,7 @@ Homepage = "https://github.com/mrgick/duckduckgo-chat-ai"
 Issues = "https://github.com/mrgick/duckduckgo-chat-ai/issues"
 
 [project.optional-dependencies]
-dev = ["isort>=5.13.2", "black>=24.4.2", "ruff>=0.5.1", "mypy>=1.11.1"]
+dev = ["ruff>=0.6.1", "mypy>=1.11.1"]
 generate_models = [
     "selenium>=4.23.1",
     "webdriver-manager>=4.0.2",
@@ -54,11 +54,8 @@ generate_models = [
 [project.scripts]
 duck_chat = "duck_chat.cli:safe_entry_point"
 
-[tool.isort]
-profile = "black"
-py_version = 312
-
 [tool.ruff]
+line-length = 120
 lint.select = [
     "E", # pycodestyle errors
     "W", # pycodestyle warnings
@@ -67,7 +64,6 @@ lint.select = [
     "C", # flake8-comprehensions
     "B", # flake8-bugbear
 ]
-line-length = 120
 lint.ignore = [
     "B008", # do not perform function calls in argument defaults
     "C901", # too complex ( > 10)
