@@ -46,7 +46,6 @@ def completer(text: str, state: int) -> str | None:
 
 
 class CLI:
-
     def __init__(self) -> None:
         readline.parse_and_bind("tab: complete")
         readline.set_completer(completer)
