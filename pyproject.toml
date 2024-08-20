@@ -52,7 +52,7 @@ generate_models = [
 ]
 
 [project.scripts]
-duck_chat = "duck_chat.cli:safe_entry_point"
+duck_chat = "duck_chat.cli.entry:safe_entry_point"
 
 [tool.ruff]
 line-length = 120
