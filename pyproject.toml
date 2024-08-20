@@ -75,4 +75,4 @@ ignore_missing_imports = true
 python_version = "3.11"
 show_error_codes = true
 strict = true
-exclude = ['format.py', "tests/", "build/"]
+exclude = ["tests/"]

@@ -23,7 +23,7 @@ def get_html() -> str:
     # Open a webpage duck.ai
     driver.get("https://duckduckgo.com/?q=DuckDuckGo+AI+Chat&ia=chat&duckai=1")
 
-    html = driver.page_source
+    html: str = driver.page_source or ""
 
     # Close browser
     driver.quit()
