@@ -1,28 +1,52 @@
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 
 import msgspec
 from platformdirs import user_config_dir
+from rich.console import Console
+from rich.prompt import Prompt
+from rich.text import Text
 
 from ..models import ModelType
 
 
 class Settings(msgspec.Struct, rename="kebab"):
     MODEL: str = list(ModelType)[0].name
-    INPUT_MODE: Union[Literal["singleline"], Literal["multiline"]] = "singleline"
+    INPUT_MODE: Literal["singleline", "multiline"] = "singleline"
     STREAM_MODE: bool = False
 
-    @staticmethod
-    def get_settings() -> "Settings":
+    @classmethod
+    def load_settings(cls) -> "Settings":
         config_path: Path = Path(user_config_dir("duck_chat")) / "conf.toml"
         if not config_path.exists():
-            s = Settings()
-            config_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(config_path, "wb") as f:
-                f.write(msgspec.toml.encode(s))
-            return s
+            settings = Settings()
+            cls.write_settings(settings)
+            return settings
         with open(config_path, "rb") as f:
             buff = f.read()
-        s = msgspec.toml.decode(buff, type=Settings)
-        print(s)
-        return s
+        settings = msgspec.toml.decode(buff, type=Settings)
+        return settings
+
+    @classmethod
+    def write_settings(cls, settings: "Settings") -> None:
+        config_path: Path = Path(user_config_dir("duck_chat")) / "conf.toml"
+        if not config_path.exists():
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "wb") as f:
+            f.write(msgspec.toml.encode(settings))
+        console = Console()
+        text = Text(f"Wrote settings to {config_path.absolute()}")
+        text.stylize("bold magenta", 18)
+        console.print(text)
+
+    @classmethod
+    def set_settings(cls) -> None:
+        settings = Settings()
+        settings.MODEL = Prompt.ask("Choose model", choices=[x.name for x in ModelType], default=settings.MODEL)
+        settings.INPUT_MODE = Prompt.ask(
+            "Choose input mode", choices=["singleline", "multiline"], default=settings.INPUT_MODE
+        )  # type: ignore
+        settings.STREAM_MODE = bool(
+            Prompt.ask("Stream mode on?", choices=["True", "False"], default=str(settings.STREAM_MODE))
+        )
+        cls.write_settings(settings)

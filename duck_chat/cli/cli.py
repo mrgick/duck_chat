@@ -11,7 +11,7 @@ from .config import Settings
 class CLI:
     def __init__(self) -> None:
         self.console = Console()
-        self.settings = Settings.get_settings()
+        self.settings = Settings.load_settings()
         self.commands = Commands()
 
     async def run(self) -> None:
