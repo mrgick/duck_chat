@@ -11,7 +11,7 @@ from ..models import ModelType
 
 
 class Settings(msgspec.Struct, rename="kebab"):
-    MODEL: str = list(ModelType)[0].name
+    MODEL: Literal[*[x.name for x in ModelType]] = list(ModelType)[0].name  # type: ignore
     INPUT_MODE: Literal["singleline", "multiline"] = "singleline"
     STREAM_MODE: bool = False
 
@@ -24,7 +24,12 @@ class Settings(msgspec.Struct, rename="kebab"):
             return settings
         with open(config_path, "rb") as f:
             buff = f.read()
-        settings = msgspec.toml.decode(buff, type=Settings)
+        try:
+            settings = msgspec.toml.decode(buff, type=Settings, strict=False)
+        except msgspec.ValidationError as e:
+            print("Validation error occurred while loading conf.toml:")
+            print(f"Field: {e}")
+            quit()
         return settings
 
     @classmethod
